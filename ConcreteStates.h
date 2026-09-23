@@ -23,11 +23,9 @@ public:
 class HasMoneyState : public State {
 public:
     void insertMoney(VendingMachine* machine) override {
-        int amount = Utils::getIntInput("Enter amount to insert (Rs.): ");
-        if (amount > 0) {
-            machine->getCoinManager().addBalance(amount);
-            std::cout << "Total Balance: Rs. " << machine->getCoinManager().getBalance() << "\n";
-        }
+        int amount = Utils::getIntInput("Insert coin (Rs. 1, 2, 5, 10, 20): ");
+        machine->getCoinManager().insertCoin(amount);
+        std::cout << "Total Balance: Rs. " << machine->getCoinManager().getBalance() << "\n";
     }
     
     void selectProduct(VendingMachine* machine) override {
@@ -47,12 +45,14 @@ public:
         }
 
         if (machine->getCoinManager().getBalance() >= p->getPrice()) {
-            machine->getCoinManager().deductBalance(p->getPrice());
-            machine->getCoinManager().recordProfit(p->getPrice());
-            machine->getInventory().updateStock(productId, -1);
-            
-            std::cout << "\n>>> Dispensing " << p->getName() << " <<<\n";
-            machine->getCoinManager().refundBalance();
+            bool success = machine->getCoinManager().dispenseChangeAndFinalize(p->getPrice());
+            if (success) {
+                machine->getInventory().updateStock(productId, -1);
+                std::cout << "\n>>> Dispensing " << p->getName() << " <<<\n";
+            } else {
+                std::cout << "\n>>> Transaction failed. Please use exact change if possible. <<<\n";
+                machine->getCoinManager().refundBalance();
+            }
             machine->changeState(std::make_unique<IdleState>());
         } else {
             std::cout << "Insufficient balance! Product costs Rs. " << p->getPrice() << "\n";
@@ -120,9 +120,10 @@ public:
 
 // Now define the IdleState methods that needed the other classes defined first
 inline void IdleState::insertMoney(VendingMachine* machine) {
-    int amount = Utils::getIntInput("Enter amount to insert (Rs.): ");
-    if (amount > 0) {
-        machine->getCoinManager().addBalance(amount);
+    int amount = Utils::getIntInput("Insert coin (Rs. 1, 2, 5, 10, 20): ");
+    machine->getCoinManager().insertCoin(amount);
+    
+    if (machine->getCoinManager().getBalance() > 0) {
         std::cout << "Balance: Rs. " << machine->getCoinManager().getBalance() << "\n";
         machine->changeState(std::make_unique<HasMoneyState>());
     }

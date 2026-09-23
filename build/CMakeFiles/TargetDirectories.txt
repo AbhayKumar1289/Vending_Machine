@@ -1,0 +1,5 @@
+C:/Projects/Vending_Machine_Git/build/CMakeFiles/vending.dir
+C:/Projects/Vending_Machine_Git/build/CMakeFiles/test_vending.dir
+C:/Projects/Vending_Machine_Git/build/CMakeFiles/RUN_TESTS.dir
+C:/Projects/Vending_Machine_Git/build/CMakeFiles/ALL_BUILD.dir
+C:/Projects/Vending_Machine_Git/build/CMakeFiles/ZERO_CHECK.dir
