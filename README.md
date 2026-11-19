@@ -90,35 +90,45 @@ classDiagram
 
 ---
 
-### 2. State-Machine Transition Diagram
+### 2. State-Machine Transition Flow
 
 ```mermaid
-stateDiagram-v2
-    [*] --> IdleState : Machine Boot
+flowchart TD
+    Boot([Power On]) --> Idle
 
-    state IdleState {
-        description: Waiting for customer or technician
-    }
+    subgraph StateMachine ["Finite State Machine"]
+        Idle["<b>IdleState</b><br/>Waiting for customer or technician"]
+        HasMoney["<b>HasMoneyState</b><br/>Customer inserted coins; selecting item"]
+        Owner["<b>OwnerModeState</b><br/>Authenticated maintenance mode"]
+    end
 
-    state HasMoneyState {
-        description: Customer inserted coins; can select items or refund
-    }
+    %% Customer Flow
+    Idle -->|"Insert Coin (Rs. 1, 2, 5, 10, 20)"| HasMoney
+    HasMoney -->|"Add more coins"| HasMoney
+    HasMoney -->|"Purchase Complete / Cancel / Rollback"| Idle
 
-    state OwnerModeState {
-        description: Authenticated maintenance mode (Password protected)
-    }
+    %% Owner Flow
+    Idle -->|"Password: 'vending123'"| Owner
+    Owner -->|"Exit Owner Mode"| Idle
 
-    IdleState --> HasMoneyState : insertCoin (valid denomination)
-    IdleState --> OwnerModeState : enterOwnerMode (Password: vending123)
-
-    HasMoneyState --> HasMoneyState : insertCoin (increment balance)
-    HasMoneyState --> IdleState : Cancel / Refund Balance
-    HasMoneyState --> IdleState : Successful Purchase (Dispensed + Change given)
-    HasMoneyState --> IdleState : Change Unavailable (Rollback + Full Refund)
-    HasMoneyState --> IdleState : enterOwnerMode (Forced Auto-Refund first)
-
-    OwnerModeState --> IdleState : Exit Owner Mode
+    %% Styling
+    style Idle fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff
+    style HasMoney fill:#1e293b,stroke:#10b981,stroke-width:2px,color:#fff
+    style Owner fill:#1e293b,stroke:#f59e0b,stroke-width:2px,color:#fff
 ```
+
+#### Transition Reference Table
+
+| From State | Event / Trigger | Condition / Guard | Action & Result | Next State |
+| :--- | :--- | :--- | :--- | :--- |
+| **`IdleState`** | Insert Coin | Denomination $\in \{1, 2, 5, 10, 20\}$ | Adds coin to balance | **`HasMoneyState`** |
+| **`IdleState`** | Enter Owner Mode | Password == `"vending123"` | Authenticates technician | **`OwnerModeState`** |
+| **`HasMoneyState`** | Insert Coin | Denomination $\in \{1, 2, 5, 10, 20\}$ | Increases balance | **`HasMoneyState`** |
+| **`HasMoneyState`** | Select Product | Balance $\ge$ Price & Exact Change Possible | Dispenses item, returns change, logs profit | **`IdleState`** |
+| **`HasMoneyState`** | Select Product | Exact Change Impossible | **Rollback:** Restores hoppers, refunds money | **`IdleState`** |
+| **`HasMoneyState`** | Cancel / Refund | Product ID = 0 entered | Refunds balance | **`IdleState`** |
+| **`HasMoneyState`** | Enter Owner Mode | Technician triggers login | **Auto-refunds** customer coins first | **`IdleState`** |
+| **`OwnerModeState`**| Exit Menu | Option 5 selected | Saves inventory & returns to service | **`IdleState`** |
 
 ---
 
